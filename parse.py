@@ -6,12 +6,14 @@ import datetime
 # import urllib.parse as urlps
 # from bs4 import BeautifulSoup as bs
 import re as regex
-
+import time
 opener = urlre.build_opener()
 
 # Temporary Cookie
 # TODO : Get Cookie From Site
-session = "JSESSIONID=Dcqg5I1Bl9eHZCfwPXZLctaPBaMPbLQo9mbSWrAxHvjtROW19xTO0EXaIiMV3xQg.UHdlYnN2ci9zZXJ2ZXIxMw=="
+cookie = "gx3xiAjbBCKyHt24jayN93qRLMatuD6D0aE6ZJ1gbqCYmbLN9DGCyDDDCXO2HrR2.UHdlYnN2ci9zZXJ2ZXIxMw=="
+session = "JSESSIONID=" + cookie
+csvsession = session + "_ga=GA1.3.1127322892.1499129323; _gid=GA1.3.711248246.1499129323"
 
 # TODO : Receive By Input
 day = datetime.date(2015, 12, 11)
@@ -22,6 +24,20 @@ jheaders = {
     "Accept-Language":"ko-KR,ko;q=0.8,en-US;q=0.6,en;q=0.4",
     "Connection":"keep-alive",
     "Content-Length":"149",
+    "Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+    "Cookie":session,
+    "Host":"hubbi.its.ulsan.kr",
+    "Origin":"http://hubbi.its.ulsan.kr",
+    "Referer":"http://hubbi.its.ulsan.kr/ingecep/launcher/embed_1.jsp?lang=ko_KR&mts=INGECEP&objid=84466814-713e496d&_d=ulsanhub",
+    "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36",
+    "X-Requested-With":"XMLHttpRequest",
+}
+j2headers = {
+    "Accept":"text/plain, */*; q=0.01",
+    "Accept-Encoding":"gzip, deflate",
+    "Accept-Language":"ko-KR,ko;q=0.8,en-US;q=0.6,en;q=0.4",
+    "Connection":"keep-alive",
+    "Content-Length":"293",
     "Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
     "Cookie":session,
     "Host":"hubbi.its.ulsan.kr",
@@ -44,6 +60,21 @@ qheaders = {
     "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36",
     "X-Requested-With":"XMLHttpRequest",
 }
+csvheaders = {
+    "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Encoding":"gzip, deflate",
+    "Accept-Language":"ko-KR,ko;q=0.8,en-US;q=0.6,en;q=0.4",
+    "Cache-Control":"max-age=0",
+    "Connection":"keep-alive",
+    "Content-Length":"149",
+    "Content-Type":"application/x-www-form-urlencoded",
+    "Cookie":csvsession,
+    "Host":"hubbi.its.ulsan.kr",
+    "Origin":"http://hubbi.its.ulsan.kr",
+    "Upgrade-Insecure-Requests":"1",
+    "Referer":"http://hubbi.its.ulsan.kr/ingecep/launcher/embed_1.jsp?lang=ko_KR&mts=INGECEP&objid=84466814-713e496d&_d=ulsanhub",
+    "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36",
+}
 jdata = {
     "ack":"18",
     "mbody":"<smsg></smsg>",
@@ -56,8 +87,9 @@ jdata = {
 }
 
 while(True):
+    start = time.clock()
     tmrow = day + datetime.timedelta(days=1)
-    r=requests.post("http://hubbi.its.ulsan.kr/ingecep/servlet/krcp", data=jdata, allow_redirects=True, headers=jheaders)
+    r = requests.post("http://hubbi.its.ulsan.kr/ingecep/servlet/krcp", data=jdata, allow_redirects=True, headers=jheaders)
     jobid = regex.findall("<smsg><item uid='(.*)'/>", str(r.content))[0]
 
     qdata = {
@@ -73,20 +105,40 @@ while(True):
         "_mts_":"0122483f-0155fb46",
         "uniquekey":"2017630173150",
     }
-    print(jobid)
-    r = requests.post("http://hubbi.its.ulsan.kr/ingecep/servlet/krcp", data=qdata, allow_redirects=True, headers=qheaders)
+    requests.post("http://hubbi.its.ulsan.kr/ingecep/servlet/krcp", data=qdata, allow_redirects=True, headers=qheaders)
 
     # DESC : For Test Code
     # with open("a.txt", "w") as f:
     #     f.write(r.content.decode("utf-8"))
 
-    trans = "^;@"
-    patterns = regex.findall("<rw i='[0-9]*'><t>(?:<\/t><v>)?<!\[CDATA\[(.*?)\]\]>", r.content.decode("utf-8").replace(",", ""))
+    j2data = {
+        "ack": "20",
+        "mbody": "<smsg></smsg>",
+        "uid": "84466814-713e496d",
+        "jobid": jobid,
+        "type": "csv",
+        "filename": "32010_가로별교통량(15분)sheet.csv",
+        "option": "instanceload",
+        "__i": "uid;jobid;type;filename;option",
+        "_mts_": "0122483f-0155fb46",
+        "uniquekey": "2017630173150",
+    }
+    r2 = requests.post("http://hubbi.its.ulsan.kr/ingecep/servlet/krcp", data=j2data, allow_redirects=True, headers=j2headers)
+    payload = regex.findall("<smsg><info status='complete' downloadurl='(.*?)'/></smsg>", str(r2.content))[0]
 
-    with open(str(day).replace("-", "")+".csv", "w") as f:
-        for p in patterns:
-            f.write(p.replace(trans, ",") + "\n")
+    csvdata = {
+        "ack": "35",
+        "_mts_": "0122483f-0155fb46",
+        "payload": payload,
+        "mbody": "32010_가로별교통량(15분)sheet.csv",
+    }
+    r3 = requests.post("http://hubbi.its.ulsan.kr/ingecep/servlet/krcp", data=csvdata, allow_redirects=True, headers=csvheaders)
+
+    with open(str(day).replace("-", "")+".csv", "wb") as f:
+        f.write(r3.content)
+
+    print(str(day) + " cost " + str(time.clock() - start) + "s")
 
     day = tmrow
-    if (day == datetime.date(2017, 7, 3)):
+    if (day == datetime.date(2017, 7, 4)):
         break
