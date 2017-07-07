@@ -125,3 +125,6 @@ local_settings.py
 db.sqlite3
 media
 staticfies
+
+### parsing data ###
+*.csv
